@@ -9,6 +9,7 @@ import com.google.android.things.pio.GpioCallback;
 import com.google.android.things.pio.PeripheralManagerService;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by vishal on 18/12/16.
@@ -20,8 +21,10 @@ public class Hcsr04 implements AutoCloseable {
     private static final String TAG = Hcsr04.class.getSimpleName();
     private Gpio trigGpio, echoGpio;
     private Handler handler = new Handler();
+    private static final int pauseInMicro = 10;
 
     private long startTime, ellapsedTime;
+    private float distanceInCm;
 
     public Hcsr04(String trigPin, String echoPin) throws IOException {
         try {
@@ -37,7 +40,6 @@ public class Hcsr04 implements AutoCloseable {
     @Override
     public void close() throws Exception {
         handler.removeCallbacks(startTrigger);
-        echoGpio.unregisterGpioCallback(gpioCallback);
         try {
             trigGpio.close();
             echoGpio.close();
@@ -54,7 +56,6 @@ public class Hcsr04 implements AutoCloseable {
             trigGpio.setActiveType(Gpio.ACTIVE_HIGH);
             echoGpio.setActiveType(Gpio.ACTIVE_HIGH);
             echoGpio.setEdgeTriggerType(Gpio.EDGE_BOTH);
-            echoGpio.registerGpioCallback(gpioCallback);
             handler.post(startTrigger);
         } catch (IOException e) {
             e.printStackTrace();
@@ -66,8 +67,16 @@ public class Hcsr04 implements AutoCloseable {
         public void run() {
             try {
                 trigGpio.setValue(!trigGpio.getValue());
-
-                handler.postDelayed(startTrigger, (long)0.001);
+                busyWaitMicros(pauseInMicro);
+                trigGpio.setValue(!trigGpio.getValue());
+                while (!echoGpio.getValue())
+                    startTime = System.nanoTime();
+                while (echoGpio.getValue())
+                    ellapsedTime = System.nanoTime() - startTime;
+                ellapsedTime = TimeUnit.NANOSECONDS.toMicros(ellapsedTime);
+                distanceInCm = ellapsedTime / 58;
+                getProximityDistance();
+                handler.postDelayed(startTrigger, 60);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -77,30 +86,38 @@ public class Hcsr04 implements AutoCloseable {
 
 
     public float[] getProximityDistance() {
-        return new float[] { (float)(17.150 * ellapsedTime) };
+        return new float[] {distanceInCm};
     }
 
-    private GpioCallback gpioCallback = new GpioCallback() {
-        @Override
-        public boolean onGpioEdge(Gpio gpio) {
-            try {
-                if (!gpio.getValue()) {
-                    startTime = SystemClock.elapsedRealtime();
-                } else {
-                    ellapsedTime = SystemClock.elapsedRealtime() - startTime;
-                    getProximityDistance();
-                }
+//    private GpioCallback gpioCallback = new GpioCallback() {
+//        @Override
+//        public boolean onGpioEdge(Gpio gpio) {
+//            try {
+//                if (!gpio.getValue()) {
+//                    startTime = SystemClock.elapsedRealtime();
+//                } else {
+//                    ellapsedTime = SystemClock.elapsedRealtime() - startTime;
+//                    getProximityDistance();
+//                }
+//
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//
+//            return true;
+//        }
+//
+//        @Override
+//        public void onGpioError(Gpio gpio, int error) {
+//            Log.d("ERROR", "GPIO CALLBACK ERROR");
+//        }
+//    };
 
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            return true;
+    public static void busyWaitMicros(long micros){
+        long waitUntil = System.nanoTime() + (micros * 1_000);
+        while(waitUntil > System.nanoTime()){
+            ;
         }
+    }
 
-        @Override
-        public void onGpioError(Gpio gpio, int error) {
-            Log.d("ERROR", "GPIO CALLBACK ERROR");
-        }
-    };
 }

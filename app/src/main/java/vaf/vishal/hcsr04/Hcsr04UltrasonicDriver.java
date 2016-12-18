@@ -56,7 +56,7 @@ public class Hcsr04UltrasonicDriver implements AutoCloseable {
         }
     }
 
-    static UserSensor build(final Hcsr04 hcsr04) {
+    private static UserSensor build(final Hcsr04 hcsr04) {
         return UserSensor.builder()
                 .setName(DRIVER_NAME)
                 .setVersion(DRIVER_VERSION)
