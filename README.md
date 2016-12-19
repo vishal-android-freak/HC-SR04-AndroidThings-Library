@@ -20,7 +20,7 @@ This is WIP. Expect things to work in a different way or not to work at all. Pul
 
 ```java
 
-import vaf.vishal.hcsr04;
+import vaf.vishal.Hcsr04;
 
 .....
 
