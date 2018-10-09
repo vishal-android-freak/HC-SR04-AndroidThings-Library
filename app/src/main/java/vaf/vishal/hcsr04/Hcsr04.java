@@ -26,12 +26,9 @@ SOFTWARE.
 package vaf.vishal.hcsr04;
 
 import android.os.Handler;
-import android.os.SystemClock;
-import android.util.Log;
 
 import com.google.android.things.pio.Gpio;
-import com.google.android.things.pio.GpioCallback;
-import com.google.android.things.pio.PeripheralManagerService;
+import com.google.android.things.pio.PeripheralManager;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
@@ -53,9 +50,9 @@ public class Hcsr04 implements AutoCloseable {
 
     public Hcsr04(String trigPin, String echoPin) throws IOException {
         try {
-            PeripheralManagerService service = new PeripheralManagerService();
-            trigGpio = service.openGpio(trigPin);
-            echoGpio = service.openGpio(echoPin);
+            PeripheralManager manager = PeripheralManager.getInstance();
+            trigGpio = manager.openGpio(trigPin);
+            echoGpio = manager.openGpio(echoPin);
             configureGpio(trigGpio, echoGpio);
         } catch (IOException e) {
             throw e;
@@ -112,30 +109,6 @@ public class Hcsr04 implements AutoCloseable {
     public float[] getProximityDistance() {
         return new float[] {distanceInCm};
     }
-
-//    private GpioCallback gpioCallback = new GpioCallback() {
-//        @Override
-//        public boolean onGpioEdge(Gpio gpio) {
-//            try {
-//                if (!gpio.getValue()) {
-//                    startTime = SystemClock.elapsedRealtime();
-//                } else {
-//                    ellapsedTime = SystemClock.elapsedRealtime() - startTime;
-//                    getProximityDistance();
-//                }
-//
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//
-//            return true;
-//        }
-//
-//        @Override
-//        public void onGpioError(Gpio gpio, int error) {
-//            Log.d("ERROR", "GPIO CALLBACK ERROR");
-//        }
-//    };
 
     public static void busyWaitMicros(long micros){
         long waitUntil = System.nanoTime() + (micros * 1_000);

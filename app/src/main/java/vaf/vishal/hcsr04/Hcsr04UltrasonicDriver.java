@@ -25,12 +25,11 @@ SOFTWARE.
 package vaf.vishal.hcsr04;
 
 import android.hardware.Sensor;
-import android.hardware.SensorManager;
 
 import com.google.android.things.userdriver.UserDriverManager;
-import com.google.android.things.userdriver.UserSensor;
-import com.google.android.things.userdriver.UserSensorDriver;
-import com.google.android.things.userdriver.UserSensorReading;
+import com.google.android.things.userdriver.sensor.UserSensor;
+import com.google.android.things.userdriver.sensor.UserSensorDriver;
+import com.google.android.things.userdriver.sensor.UserSensorReading;
 
 import java.io.IOException;
 
@@ -69,19 +68,19 @@ public class Hcsr04UltrasonicDriver implements AutoCloseable {
         }
         if (userSensor == null) {
             userSensor = build(device);
-            UserDriverManager.getManager().registerSensor(userSensor);
+            UserDriverManager.getInstance().registerSensor(userSensor);
         }
     }
 
     public void unregister() {
         if (userSensor != null) {
-            UserDriverManager.getManager().unregisterSensor(userSensor);
+            UserDriverManager.getInstance().unregisterSensor(userSensor);
             userSensor = null;
         }
     }
 
     private static UserSensor build(final Hcsr04 hcsr04) {
-        return UserSensor.builder()
+        return new UserSensor.Builder()
                 .setName(DRIVER_NAME)
                 .setVersion(DRIVER_VERSION)
                 .setType(Sensor.TYPE_PROXIMITY)
